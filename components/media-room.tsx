@@ -11,6 +11,7 @@ import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { KrispController } from "@/components/krisp-controller";
 
 interface MediaRoomProps {
   chatId: string;
@@ -127,6 +128,7 @@ export const MediaRoom = ({
       audio={audio}
       onDisconnected={handleDisconnect}
     >
+      <KrispController />
       <VideoConference />
       <RoomAudioRenderer />
     </LiveKitRoom>
