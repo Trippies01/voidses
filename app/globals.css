@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+html,
+body,
+:root {
+  height: 100%;
+}
+
+/* LiveKit Discord Styles */
+.lk-room-container {
+  @apply h-full bg-[#313338];
+}
+
+.lk-grid-layout {
+  @apply gap-4 p-4;
+}
+
+.lk-participant-tile {
+  @apply rounded-lg overflow-hidden bg-[#1e1f22] border-2 border-zinc-700;
+}
+
+.lk-participant-tile[data-lk-speaking="true"] {
+  @apply border-green-500;
+}
+
+.lk-participant-metadata {
+  @apply bg-[#1e1f22]/90 text-white;
+}
+
+.lk-control-bar {
+  @apply bg-[#1e1f22] border-t border-zinc-700 p-4;
+}
+
+.lk-button {
+  @apply bg-zinc-700 hover:bg-zinc-600 text-white rounded-md transition-all;
+}
+
+.lk-button[data-lk-enabled="false"] {
+  @apply bg-red-600 hover:bg-red-500;
+}
+
+.lk-participant-name {
+  @apply text-sm font-semibold;
+}
+
+.lk-focus-layout {
+  @apply bg-[#313338];
+}
+
+/* Typing Indicator Animation */
+.animation-delay-0 {
+  animation-delay: 0ms;
+}
+
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+/* LiveKit Discord Basic Styles */
+.lk-room-container {
+  @apply h-full bg-[#313338];
+}
+
+.lk-grid-layout {
+  @apply gap-4 p-4;
+}
+
+.lk-participant-tile {
+  @apply rounded-lg overflow-hidden bg-[#1e1f22] border-2 border-zinc-700;
+}
+
+.lk-participant-tile[data-lk-speaking="true"] {
+  @apply border-green-500;
+}
+
+.lk-participant-metadata {
+  @apply bg-[#1e1f22]/90 text-white;
+}
+
+.lk-control-bar {
+  @apply bg-[#1e1f22] border-t border-zinc-700 p-4;
+}
+
+.lk-button {
+  @apply bg-zinc-700 hover:bg-zinc-600 text-white rounded-md transition-all;
+}
+
+.lk-button[data-lk-enabled="false"] {
+  @apply bg-red-600 hover:bg-red-500;
+}
+
+.lk-participant-name {
+  @apply text-sm font-semibold;
+}
+
+.lk-focus-layout {
+  @apply bg-[#313338];
+}

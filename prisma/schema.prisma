@@ -1,0 +1,386 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum UserStatus {
+  ONLINE
+  IDLE
+  DO_NOT_DISTURB
+  INVISIBLE
+  OFFLINE
+}
+
+model Friendship {
+  id String @id @default(uuid())
+  
+  requesterId String
+  requester Profile @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  
+  addresseeId String
+  addressee Profile @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  
+  status FriendshipStatus @default(PENDING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([requesterId, addresseeId])
+  @@index([requesterId, status])
+  @@index([addresseeId, status])
+}
+
+model Profile {
+  id String @id @default(uuid())
+  userId String @unique
+  name String
+  imageUrl String @db.Text
+  email String @db.Text
+  
+  status UserStatus @default(ONLINE)
+  customStatus String?
+  customStatusEmoji String?
+
+  servers Server[]
+  members Member[]
+  channels Channel[]
+  
+  friendRequestsSent Friendship[] @relation("FriendRequester")
+  friendRequestsReceived Friendship[] @relation("FriendAddressee")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AuditLogAction {
+  CHANNEL_CREATE
+  CHANNEL_UPDATE
+  CHANNEL_DELETE
+  MEMBER_KICK
+  MEMBER_BAN
+  MEMBER_ROLE_UPDATE
+  MESSAGE_DELETE
+  MESSAGE_PIN
+  MESSAGE_UNPIN
+  ROLE_CREATE
+  ROLE_UPDATE
+  ROLE_DELETE
+  SERVER_UPDATE
+  WEBHOOK_CREATE
+  WEBHOOK_DELETE
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+  
+  serverId String
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  
+  userId String // Who performed the action
+  targetId String? // Who/what was affected
+  
+  action AuditLogAction
+  changes Json? // Before/after data
+  reason String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([serverId, createdAt])
+  @@index([userId])
+}
+
+model Server {
+  id String @id @default(uuid())
+  name String
+  imageUrl String @db.Text
+  inviteCode String @unique
+
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  members Member[]
+  channels Channel[]
+  categories Category[]
+  roles Role[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+}
+
+enum MemberRole {
+  ADMIN
+  MODERATOR
+  GUEST
+}
+
+model Role {
+  id String @id @default(uuid())
+  name String
+  color String? // Hex color like #5865F2
+  position Int @default(0)
+  permissions BigInt @default(0)
+  
+  hoist Boolean @default(false) // Display separately
+  mentionable Boolean @default(true)
+  isDefault Boolean @default(false) // @everyone role
+  
+  serverId String
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  
+  members Member[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([serverId, position])
+}
+
+model Member {
+  id String @id @default(uuid())
+  role MemberRole @default(GUEST) // Legacy - keep for compatibility
+  
+  // New role system
+  roleIds String[] @default([])
+  roles Role[]
+
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  serverId String
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+  directMessages DirectMessage[]
+  reactions MessageReaction[]
+  mentionedIn Message[] @relation("MessageMentions")
+
+  conversationsInitiated Conversation[] @relation("MemberOne")
+  conversationsReceived Conversation[] @relation("MemberTwo")
+
+  lastSeenAt DateTime @default(now())
+  isOnline Boolean @default(false)
+  
+  currentChannelId String?
+  isMuted Boolean @default(false)
+  isDeafened Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+  @@index([serverId])
+  @@index([isOnline])
+  @@index([currentChannelId])
+}
+
+enum ChannelType {
+  TEXT
+  AUDIO
+  VIDEO
+}
+
+model Category {
+  id String @id @default(uuid())
+  name String
+  position Int @default(0)
+
+  serverId String
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  channels Channel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serverId, position])
+}
+
+model Webhook {
+  id String @id @default(uuid())
+  name String
+  avatar String?
+  token String @unique @default(uuid())
+  
+  channelId String
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  createdById String
+  
+  createdAt DateTime @default(now())
+  
+  @@index([channelId])
+  @@index([token])
+}
+
+model Channel {
+  id String @id @default(uuid())
+  name String
+  type ChannelType @default(TEXT)
+  position Int @default(0)
+
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  serverId String
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  categoryId String?
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  messages Message[]
+  threads Thread[]
+  webhooks Webhook[]
+  lastReadBy ChannelRead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+  @@index([serverId])
+  @@index([categoryId, position])
+}
+
+model ChannelRead {
+  id String @id @default(uuid())
+
+  channelId String
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  memberId String
+  lastReadMessageId String?
+
+  lastReadAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([channelId, memberId])
+  @@index([channelId])
+  @@index([memberId])
+}
+
+model Thread {
+  id String @id @default(uuid())
+  name String
+  
+  starterMessageId String @unique
+  starterMessage Message @relation("ThreadStarter", fields: [starterMessageId], references: [id], onDelete: Cascade)
+  
+  channelId String
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  archived Boolean @default(false)
+  locked Boolean @default(false)
+  autoArchiveDuration Int @default(1440) // minutes
+  
+  messages Message[] @relation("ThreadMessages")
+  
+  createdAt DateTime @default(now())
+  archivedAt DateTime?
+  
+  @@index([channelId, archived])
+}
+
+model Message {
+  id String @id @default(uuid())
+  content String @db.Text
+
+  fileUrl String? @db.Text
+
+  memberId String
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  threadId String?
+  thread Thread? @relation("ThreadMessages", fields: [threadId], references: [id], onDelete: Cascade)
+  
+  starterThread Thread? @relation("ThreadStarter")
+
+  reactions MessageReaction[]
+  mentions Member[] @relation("MessageMentions")
+  mentionEveryone Boolean @default(false)
+
+  pinned Boolean @default(false)
+  pinnedAt DateTime?
+  pinnedById String?
+
+  deleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([channelId])
+  @@index([memberId])
+  @@index([pinned])
+  @@index([threadId])
+}
+
+model Conversation {
+  id String @id @default(uuid())
+
+  memberOneId String
+  memberOne Member @relation("MemberOne", fields: [memberOneId], references: [id], onDelete: Cascade)
+
+  memberTwoId String
+  memberTwo Member @relation("MemberTwo", fields: [memberTwoId], references: [id], onDelete: Cascade)
+
+  directMessages DirectMessage[]
+
+  @@index([memberTwoId])
+
+  @@unique([memberOneId, memberTwoId])
+}
+
+model DirectMessage {
+  id String @id @default(uuid())
+  content String @db.Text
+  fileUrl String? @db.Text
+
+  memberId String
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  conversationId String
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  deleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+  @@index([conversationId])
+}
+
+model MessageReaction {
+  id String @id @default(uuid())
+  emoji String
+
+  messageId String
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, memberId, emoji])
+  @@index([messageId])
+  @@index([memberId])
+}
+
