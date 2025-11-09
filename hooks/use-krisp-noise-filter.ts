@@ -5,7 +5,7 @@ import { KrispNoiseFilter } from '@livekit/krisp-noise-filter';
 export const useKrispNoiseFilter = (enabled: boolean) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isActive, setIsActive] = useState(false);
-  const processorRef = useRef<any>(null);
+  const processorRef = useRef<ReturnType<typeof KrispNoiseFilter> | null>(null);
   const trackRef = useRef<LocalAudioTrack | null>(null);
 
   const enableForRoom = async (room: Room) => {
