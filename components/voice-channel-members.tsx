@@ -32,12 +32,11 @@ export const VoiceChannelMembers = ({
     member: Member & { profile: Profile };
   } | null>(null);
   const [memberVolumes, setMemberVolumes] = useState<Record<string, number>>({});
+  const router = useRouter();
 
   if (members.length === 0) {
     return null;
   }
-
-  const router = useRouter();
 
   const handleVolumeChange = (memberId: string, volume: number) => {
     setMemberVolumes(prev => ({ ...prev, [memberId]: volume }));

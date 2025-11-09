@@ -44,7 +44,7 @@ export const useKrispNoiseFilter = (enabled: boolean) => {
       const track = await waitForTrack();
       trackRef.current = track;
       console.log('🎤 Track hazır:', track.sid);
-      console.log('📊 Track durumu - isMuted:', track.isMuted, 'isEnabled:', track.isEnabled);
+      console.log('📊 Track durumu - isMuted:', track.isMuted);
 
       // Track publish olduktan sonra Krisp'i uygula
       console.log('🎤 Krisp uygulanıyor...');
