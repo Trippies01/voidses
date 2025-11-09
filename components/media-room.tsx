@@ -5,13 +5,24 @@ import {
   LiveKitRoom, 
   VideoConference,
   RoomAudioRenderer,
+  useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { KrispController } from "@/components/krisp-controller";
+import { useVoiceSettings } from "@/hooks/use-voice-settings";
+import { usePushToTalk } from "@/hooks/use-push-to-talk";
+import { useKrispNoiseFilter } from "@/hooks/use-krisp-noise-filter";
+import { ConnectionQuality } from "@/components/connection-quality";
+import { ScreenShareButton } from "@/components/screen-share-button";
+import { VoiceNotifications } from "@/components/voice-notifications";
+import { useAutoVolumeNormalization } from "@/hooks/use-auto-volume-normalization";
+import { CameraControls } from "@/components/camera-controls";
+import { AdvancedStats } from "@/components/advanced-stats";
+import { Sparkles } from "lucide-react";
+
 
 interface MediaRoomProps {
   chatId: string;
@@ -125,12 +136,145 @@ export const MediaRoom = ({
       token={token}
       connect={true}
       video={video}
-      audio={audio}
+      audio={{
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 48000,
+        channelCount: 1,
+      }}
+      options={{
+        publishDefaults: {
+          audioPreset: {
+            maxBitrate: 64000,
+          },
+          dtx: true,
+          red: true,
+        },
+        dynacast: true,
+        audioCaptureDefaults: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      }}
       onDisconnected={handleDisconnect}
     >
-      <KrispController />
+      <ConnectionQuality />
+      <VoiceNotifications />
+      <PushToTalkController />
       <VideoConference />
       <RoomAudioRenderer />
+      
+      {/* Kontrol Butonları */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <div className="bg-gradient-to-br from-zinc-900/95 to-zinc-800/95 backdrop-blur-md border border-zinc-700/50 rounded-2xl p-3 shadow-2xl">
+          <div className="flex gap-3">
+            <CameraControls />
+            <ScreenShareButton />
+          </div>
+        </div>
+      </div>
+
+      {/* Gelişmiş İstatistikler */}
+      <AdvancedStats />
     </LiveKitRoom>
+  );
+};
+
+// Push-to-Talk & Krisp Controller
+const PushToTalkController = () => {
+  const room = useRoomContext();
+  const { settings } = useVoiceSettings();
+  const { isTalking, enableForRoom: enablePTT } = usePushToTalk({
+    enabled: settings.pushToTalk,
+    key: settings.pushToTalkKey,
+    delay: settings.pushToTalkDelay,
+  });
+  const { isActive: krispActive, enableForRoom: enableKrisp } = useKrispNoiseFilter(settings.krispEnabled);
+  const { enableForRoom: enableAutoVolume } = useAutoVolumeNormalization(settings.autoVolumeNormalization);
+
+  useEffect(() => {
+    if (!room) {
+      console.log('⚠️ Room yok, controller başlatılmadı');
+      return;
+    }
+
+    console.log('🎬 PTT/Krisp Controller başlatılıyor...');
+    console.log('⚙️ Settings:', { 
+      pushToTalk: settings.pushToTalk, 
+      krispEnabled: settings.krispEnabled,
+      key: settings.pushToTalkKey 
+    });
+
+    // PTT'yi hemen başlat
+    const pttTimer = setTimeout(() => {
+      console.log('⏰ PTT timer tetiklendi (500ms)');
+      enablePTT(room);
+    }, 500);
+
+    // Krisp'i daha sonra başlat (track publish olsun diye)
+    const krispTimer = setTimeout(() => {
+      console.log('⏰ Krisp timer tetiklendi (3000ms)');
+      if (settings.krispEnabled) {
+        enableKrisp(room);
+      } else {
+        console.log('⏸️ Krisp kapalı, başlatılmadı');
+      }
+    }, 3000);
+
+    // Otomatik ses dengelemeyi başlat
+    const autoVolumeTimer = setTimeout(() => {
+      if (settings.autoVolumeNormalization) {
+        enableAutoVolume(room);
+      }
+    }, 5000);
+
+    return () => {
+      console.log('🧹 PTT/Krisp/AutoVolume Controller cleanup');
+      clearTimeout(pttTimer);
+      clearTimeout(krispTimer);
+      clearTimeout(autoVolumeTimer);
+    };
+  }, [room, enablePTT, enableKrisp, enableAutoVolume, settings.krispEnabled, settings.pushToTalk, settings.pushToTalkKey, settings.autoVolumeNormalization]);
+
+  return (
+    <>
+      {/* PTT göstergesi */}
+      {settings.pushToTalk && isTalking && (
+        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom duration-200">
+            <div className="relative">
+              <div className="w-4 h-4 bg-white rounded-full animate-pulse" />
+              <div className="absolute inset-0 w-4 h-4 bg-white rounded-full animate-ping" />
+            </div>
+            <div>
+              <span className="font-bold text-lg">Konuşuyorsunuz</span>
+              <p className="text-xs text-green-100">Space tuşunu bırakınca mikrofon kapanacak</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Krisp göstergesi */}
+      {krispActive && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md border border-green-500/30 rounded-xl px-4 py-2 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Sparkles className="w-4 h-4 text-green-400" />
+                <div className="absolute inset-0 animate-ping">
+                  <Sparkles className="w-4 h-4 text-green-400 opacity-75" />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-green-400">Krisp AI</p>
+                <p className="text-[10px] text-green-300/70">Gürültü Engelleme Aktif</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

@@ -13,6 +13,7 @@ interface VoiceChannelSectionProps {
   role?: MemberRole;
   label: string;
   channelType: ChannelType;
+  currentMemberId?: string;
 }
 
 export const VoiceChannelSection = ({
@@ -21,6 +22,7 @@ export const VoiceChannelSection = ({
   role,
   label,
   channelType,
+  currentMemberId,
 }: VoiceChannelSectionProps) => {
   const [channelMembers, setChannelMembers] = useState<Record<string, any[]>>({});
   const { socket } = useSocket();
@@ -28,12 +30,8 @@ export const VoiceChannelSection = ({
   // Fetch members in voice channels
   const fetchVoiceMembers = useCallback(async () => {
     try {
-      const url = qs.stringifyUrl({
-        url: `/api/servers/${server.id}/voice-members`,
-      });
-      console.log("🔍 Fetching voice members:", url);
+      const url = `/api/servers/${server.id}/voice-members`;
       const response = await axios.get(url);
-      console.log("✅ Voice members data:", response.data);
       setChannelMembers(response.data);
     } catch (error) {
       console.error("❌ [VOICE_MEMBERS_FETCH]", error);
@@ -43,11 +41,11 @@ export const VoiceChannelSection = ({
   useEffect(() => {
     fetchVoiceMembers();
 
-    // Poll every 5 seconds for updates
-    const interval = setInterval(fetchVoiceMembers, 5000);
+    // Poll every 10 seconds for updates (reduced frequency)
+    const interval = setInterval(fetchVoiceMembers, 10000);
 
     return () => clearInterval(interval);
-  }, [fetchVoiceMembers]);
+  }, [server.id]); // Only depend on server.id, not fetchVoiceMembers
 
   // Listen for voice state changes via socket
   useEffect(() => {
@@ -68,7 +66,6 @@ export const VoiceChannelSection = ({
     <div className="space-y-[2px]">
       {channels.map((channel) => {
         const membersInChannel = channelMembers[channel.id] || [];
-        console.log(`📋 Channel ${channel.name} has ${membersInChannel.length} members:`, membersInChannel);
         return (
           <ServerChannel
             key={channel.id}
@@ -76,6 +73,7 @@ export const VoiceChannelSection = ({
             role={role}
             server={server}
             membersInChannel={membersInChannel}
+            currentMemberId={currentMemberId}
           />
         );
       })}

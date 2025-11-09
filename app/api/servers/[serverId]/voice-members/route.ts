@@ -8,11 +8,12 @@ export async function GET(
 ) {
   try {
     const profile = await currentProfile();
-    const { serverId } = await params;
 
     if (!profile) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    const { serverId } = await params;
 
     if (!serverId) {
       return new NextResponse("Server ID missing", { status: 400 });
@@ -29,6 +30,9 @@ export async function GET(
       include: {
         profile: true,
       },
+    }).catch((err) => {
+      console.error("[VOICE_MEMBERS_DB_ERROR]", err);
+      return [];
     });
 
     // Group by channel
@@ -45,8 +49,8 @@ export async function GET(
 
     return NextResponse.json(grouped);
   } catch (error) {
-    console.log("[VOICE_MEMBERS_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[VOICE_MEMBERS_GET]", error);
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
 

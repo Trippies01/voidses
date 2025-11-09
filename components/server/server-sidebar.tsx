@@ -2,31 +2,18 @@ import { currentProfile } from "@/lib/current-profile";
 import { db } from "@/lib/db";
 import { ChannelType, MemberRole } from "@prisma/client";
 import { redirect } from "next/navigation";
-import { Hash, Mic, Video, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Hash, Mic, Video } from "lucide-react";
 import { ServerHeader } from "./server-header";
 import { ServerFooter } from "./server-footer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ServerSection } from "./server-section";
+import { CollapsibleSection } from "./collapsible-section";
 import { ServerChannel } from "./server-channel";
-import { ServerMember } from "./server-member";
 import { VoiceChannelSection } from "./voice-channel-section";
 import { ServerCategory } from "./server-category";
 
 interface ServerSidebarProps {
   serverId: string;
-}
-
-const iconMap = {
-  [ChannelType.TEXT]: Hash,
-  [ChannelType.AUDIO]: Mic,
-  [ChannelType.VIDEO]: Video,
-};
-
-const roleIconMap = {
-  [MemberRole.GUEST]: null,
-  [MemberRole.MODERATOR]: <ShieldCheck className="h-4 w-4 mr-2 text-indigo-500" />,
-  [MemberRole.ADMIN]: <ShieldAlert className="h-4 w-4 mr-2 text-rose-500" />
 }
 
 export const ServerSidebar = async ({
@@ -69,13 +56,13 @@ export const ServerSidebar = async ({
   const textChannels = uncategorizedChannels?.filter((channel) => channel.type === ChannelType.TEXT)
   const audioChannels = uncategorizedChannels?.filter((channel) => channel.type === ChannelType.AUDIO)
   const videoChannels = uncategorizedChannels?.filter((channel) => channel.type === ChannelType.VIDEO)
-  const members = server?.members.filter((member) => member.profileId !== profile.id)
 
   if (!server) {
     return redirect("/");
   }
 
-  const role = server.members.find((member) => member.profileId === profile.id)?.role;
+  const currentMember = server.members.find((member) => member.profileId === profile.id);
+  const role = currentMember?.role;
 
   return (
     <div className="flex flex-col h-full text-primary w-full bg-discord-bg-secondary">
@@ -120,6 +107,7 @@ export const ServerSidebar = async ({
                     role={role}
                     label=""
                     channelType={ChannelType.AUDIO}
+                    currentMemberId={currentMember?.id}
                   />
                 ))}
                 {categoryVideoChannels.map((channel) => (
@@ -130,6 +118,7 @@ export const ServerSidebar = async ({
                     role={role}
                     label=""
                     channelType={ChannelType.VIDEO}
+                    currentMemberId={currentMember?.id}
                   />
                 ))}
               </div>
@@ -139,58 +128,64 @@ export const ServerSidebar = async ({
 
         {/* Uncategorized channels */}
         {!!textChannels?.length && (
-          <div className="mb-2">
-            <ServerSection
-              sectionType="channels"
-              channelType={ChannelType.TEXT}
-              role={role}
-              label="Text Kanalları"
-            />
-            <div className="space-y-[2px]">
-              {textChannels.map((channel) => (
-                <ServerChannel
-                  key={channel.id}
-                  channel={channel}
-                  role={role}
-                  server={server}
-                />
-              ))}
-            </div>
-          </div>
+          <CollapsibleSection
+            sectionType="channels"
+            channelType={ChannelType.TEXT}
+            role={role}
+            label="Text Kanalları"
+            server={server}
+            defaultOpen={true}
+            count={textChannels.length}
+          >
+            {textChannels.map((channel) => (
+              <ServerChannel
+                key={channel.id}
+                channel={channel}
+                role={role}
+                server={server}
+              />
+            ))}
+          </CollapsibleSection>
         )}
         {!!audioChannels?.length && (
-          <div className="mb-2">
-            <ServerSection
-              sectionType="channels"
-              channelType={ChannelType.AUDIO}
-              role={role}
-              label="Sesli Kanallar"
-            />
+          <CollapsibleSection
+            sectionType="channels"
+            channelType={ChannelType.AUDIO}
+            role={role}
+            label="Sesli Kanallar"
+            server={server}
+            defaultOpen={true}
+            count={audioChannels.length}
+          >
             <VoiceChannelSection
               channels={audioChannels}
               server={server}
               role={role}
               label="Sesli Kanallar"
               channelType={ChannelType.AUDIO}
+              currentMemberId={currentMember?.id}
             />
-          </div>
+          </CollapsibleSection>
         )}
         {!!videoChannels?.length && (
-          <div className="mb-2">
-            <ServerSection
-              sectionType="channels"
-              channelType={ChannelType.VIDEO}
-              role={role}
-              label="Video Kanallar"
-            />
+          <CollapsibleSection
+            sectionType="channels"
+            channelType={ChannelType.VIDEO}
+            role={role}
+            label="Video Kanallar"
+            server={server}
+            defaultOpen={true}
+            count={videoChannels.length}
+          >
             <VoiceChannelSection
               channels={videoChannels}
               server={server}
               role={role}
               label="Video Kanallar"
               channelType={ChannelType.VIDEO}
+              currentMemberId={currentMember?.id}
             />
-          </div>
+          </CollapsibleSection>
         )}
       </ScrollArea>
       <ServerFooter />

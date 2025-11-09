@@ -2,16 +2,35 @@
 
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Mic, MicOff, Headphones, Settings, PhoneOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Mic, MicOff, Headphones, Settings } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { ActionTooltip } from "@/components/action-tooltip";
 import { cn } from "@/lib/utils";
 import { OnlineStatus } from "@/components/online-status";
+import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from "@/hooks/use-keyboard-shortcuts";
 
 export const ServerFooter = () => {
   const { user } = useUser();
+  const router = useRouter();
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+
+  // Klavye kısayolları
+  useKeyboardShortcuts([
+    {
+      ...DEFAULT_SHORTCUTS.MUTE,
+      action: () => toggleMute(),
+    },
+    {
+      ...DEFAULT_SHORTCUTS.DEAFEN,
+      action: () => toggleDeafen(),
+    },
+    {
+      ...DEFAULT_SHORTCUTS.SETTINGS,
+      action: () => router.push('/settings/voice'),
+    },
+  ]);
 
   if (!user) return null;
 
@@ -93,8 +112,9 @@ export const ServerFooter = () => {
           </button>
         </ActionTooltip>
 
-        <ActionTooltip label="Kullanıcı Ayarları" side="top">
+        <ActionTooltip label="Ses Ayarları" side="top">
           <button
+            onClick={() => router.push('/settings/voice')}
             className="flex items-center justify-center w-8 h-8 rounded hover:bg-[#3c3f45] transition text-zinc-400 hover:text-zinc-200"
           >
             <Settings className="w-5 h-5" />

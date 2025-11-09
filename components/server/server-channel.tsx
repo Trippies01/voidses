@@ -17,6 +17,7 @@ interface ServerChannelProps {
   server: Server;
   role?: MemberRole;
   membersInChannel?: any[];
+  currentMemberId?: string;
 }
 
 const iconMap = {
@@ -30,6 +31,7 @@ export const ServerChannel = ({
   server,
   role,
   membersInChannel = [],
+  currentMemberId,
 }: ServerChannelProps) => {
   const { onOpen } = useModal();
   const params = useParams();
@@ -47,13 +49,6 @@ export const ServerChannel = ({
   const isCurrentChannel = params?.channelId === channel.id;
   const isVoiceChannel = channel.type === ChannelType.AUDIO || channel.type === ChannelType.VIDEO;
   const hasMembers = membersInChannel.length > 0;
-  
-  console.log(`🎤 ServerChannel ${channel.name}:`, {
-    isVoiceChannel,
-    hasMembers,
-    membersCount: membersInChannel.length,
-    isExpanded,
-  });
 
   const onClick = () => {
     router.push(`/servers/${params?.serverId}/channels/${channel.id}`);
@@ -130,6 +125,11 @@ export const ServerChannel = ({
       {isVoiceChannel && hasMembers && isExpanded && (
         <VoiceChannelMembers 
           members={membersInChannel}
+          channelName={channel.name}
+          serverId={server.id}
+          channelId={channel.id}
+          currentMemberRole={role}
+          currentMemberId={currentMemberId}
         />
       )}
     </div>

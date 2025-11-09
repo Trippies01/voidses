@@ -7,6 +7,7 @@ import { ChatInput } from "@/components/chat/chat-input";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { MediaRoom } from "@/components/media-room";
 import { MediaRoomWrapper } from "@/components/media-room-wrapper";
+import { ModernVoiceChannel } from "@/components/voice/modern-voice-channel";
 import { ChannelType } from "@prisma/client";
 
 interface ChannelIdPageProps {
@@ -80,18 +81,25 @@ const ChannelIdPage = async ({
     voiceChannelName = voiceChannel?.name;
   }
 
+  // Fetch server for name
+  const server = await db.server.findUnique({
+    where: {
+      id: serverId,
+    },
+  });
+
   return ( 
     <div className="bg-white dark:bg-[#313338] flex flex-col h-full">
-      <ChatHeader
-        name={channel.name}
-        serverId={channel.serverId}
-        type="channel"
-        channelType={channel.type}
-        channelId={channel.id}
-        voiceChannelName={voiceChannelName}
-      />
       {channel.type === ChannelType.TEXT && (
         <>
+          <ChatHeader
+            name={channel.name}
+            serverId={channel.serverId}
+            type="channel"
+            channelType={channel.type}
+            channelId={channel.id}
+            voiceChannelName={voiceChannelName}
+          />
           <ChatMessages
             member={member}
             name={channel.name}
@@ -119,27 +127,23 @@ const ChannelIdPage = async ({
         </>
       )}
       {channel.type === ChannelType.AUDIO && (
-        <MediaRoomWrapper
-          chatId={channel.id}
-          video={false}
-          audio={true}
-          memberId={member.id}
+        <ModernVoiceChannel
           channelId={channel.id}
-          serverId={serverId}
           channelName={channel.name}
-          channelType={channel.type}
+          serverName={server?.name || "Sunucu"}
+          serverId={serverId}
+          memberId={member.id}
+          memberRole={member.role}
         />
       )}
       {channel.type === ChannelType.VIDEO && (
-        <MediaRoomWrapper
-          chatId={channel.id}
-          video={true}
-          audio={true}
-          memberId={member.id}
+        <ModernVoiceChannel
           channelId={channel.id}
-          serverId={serverId}
           channelName={channel.name}
-          channelType={channel.type}
+          serverName={server?.name || "Sunucu"}
+          serverId={serverId}
+          memberId={member.id}
+          memberRole={member.role}
         />
       )}
     </div>

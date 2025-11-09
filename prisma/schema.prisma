@@ -54,6 +54,12 @@ model Profile {
   customStatus String?
   customStatusEmoji String?
 
+  // Voice Settings
+  noiseSuppression Boolean @default(true)
+  voiceActivityDetection Boolean @default(true)
+  echoCancellation Boolean @default(true)
+  autoGainControl Boolean @default(true)
+
   servers Server[]
   members Member[]
   channels Channel[]
